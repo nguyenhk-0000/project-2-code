@@ -131,6 +131,15 @@ void app_main(void)
         last_ignition = ignition; // Update last state for edge detection
 
         /* Requirement 4: Engine Latch */
-      
-    }
+       
+        // This ensures the hardware LED always reflects the engine's software state.
+        if (engine_running == true) {
+            gpio_set_level(LED_RED, 1); // Keep the engine LED on [cite: 22, 26]
+        } else {
+            gpio_set_level(LED_RED, 0); // Keep the engine LED off [cite: 27, 36]
+        }
+
+        vTaskDelay(50 / portTICK_PERIOD_MS);
+            
+            }
 }
