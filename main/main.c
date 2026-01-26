@@ -78,8 +78,7 @@ void app_main(void)
         // Check if conditions are safe for ignition
         bool is_safe_to_start = (driveSeat && passSeat && driveBelt && passBelt);
 
-        /* ---- 1. Welcome Message (once, on sit-down) ---- */
-        // Req: Display "Welcome to enhanced alarm system model 218-W26" 
+        /* 1. Welcome Message (once, on sit-down) */
         if (driveSeat && !lastDriveSeat && !welcome_shown) {
             printf("Welcome to enhanced alarm system model 218-W26.\n");
             welcome_shown = true;
@@ -87,9 +86,6 @@ void app_main(void)
         lastDriveSeat = driveSeat;
 
         /* ---- 2. Green LED: ignition enabled ---- */
-        // Req: Indicate enabled only when safe 
-        // logic: Turn ON Green ONLY if engine is OFF AND it is safe to start.
-        // If engine is running, Green should be OFF[cite: 22].
         if (!engine_running && is_safe_to_start) {
             gpio_set_level(LED_GREEN, 1);
         } else {
@@ -97,29 +93,26 @@ void app_main(void)
         }
 
         /* ---- 3, 4, 5. Ignition Button Logic ---- */
-        // Detect button press (Rising Edge) to handle toggling
         if (ignition && !last_ignition) {
             
             if (engine_running) {
-                /* ---- Requirement 5: Stop Engine ---- */
-                // Req: When engine is running, stop engine when button pushed 
                 engine_running = false;
                 gpio_set_level(LED_RED, 0); // Turn off Engine LED
                 printf("Engine stopped.\n");
 
             } else {
-                /* ---- Requirement 3: Start Engine ---- */
+                /*3: Start Engine */
                 if (is_safe_to_start) {
-                    // Req: If enabled (Green was lit), normal ignition [cite: 21]
+                    // Req: If enabled (Green was lit), normal ignition 
                     engine_running = true;
                     gpio_set_level(LED_GREEN, 0); // Extinguish Green
                     gpio_set_level(LED_RED, 1);   // Light Engine LED
-                    printf("Engine started.\n");  // [cite: 22]
+                    printf("Engine started.\n");  
                 } else {
-                    // Req: If not enabled, inhibit ignition [cite: 23]
-                    // Req: Sound buzzer and display errors [cite: 23, 24]
+                    // Req: If not enabled, inhibit ignition 
+                    // Req: Sound buzzer and display errors 
                     gpio_set_level(buzzer, 1);
-                    printf("Ignition inhibited\n"); // [cite: 24]
+                    printf("Ignition inhibited\n");
 
                     if (!driveSeat)  printf("Driver seat not occupied\n");
                     if (!passSeat)   printf("Passenger seat not occupied\n");
@@ -137,12 +130,7 @@ void app_main(void)
         
         last_ignition = ignition; // Update last state for edge detection
 
-        /* ---- Requirement 4: Engine Latch ---- */
-        // Req: Keep engine running even if belts removed 
-        // This is handled because `engine_running` stays true until the button is pressed again.
-        // We ensure the RED LED reflects this state every loop.
-        gpio_set_level(LED_RED, engine_running ? 1 : 0);
-
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        /* Requirement 4: Engine Latch */
+      
     }
 }
