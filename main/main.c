@@ -16,8 +16,6 @@
 #define LED_RIGHT_LOW_BEAM GPIO_NUM_39
 //ADC channel 3/GPIO4 - potentiometer
 //ADC channel 4/GPIO5 -light sensor
-//#define LED_SENSOR GPIO_NUM_24
-//#define LIGHTS_MODE_SELECTOR GPIO_NUM_25
 
 void app_main(void)
 {
@@ -79,9 +77,13 @@ void app_main(void)
     char headlightMode[] = ""; // ON, OFF or AUTO modes
         //will need a helper function to convert int values from potentiometer 
         //to strings (optional)
-    // Threshhold values
-    int daylight = 1365; //change to appropriate value
-    int dusk = 2730;     //change to appropriate value
+    // Threshold values for light sensor
+    int daylight = 1722;
+    int dusk = 880;
+
+    // Threshold values for potentiometer
+    int threshold1 = 1365;
+    int threshold2 = 2730;
 
     printf("System ready.\n");
 
@@ -187,5 +189,17 @@ void app_main(void)
 
         vTaskDelay(50 / portTICK_PERIOD_MS);
             
+    }
+
+    //adc_bits from potentiometer
+    //maybe rename var adc_bits
+    void convertModes (adc_bits) {
+        if (adc_bits<=threshold1) { //0 -1365
+            headlightMode = "OFF";
+        } else if (adc_bits >= threshold2) { //2730-4095
+            headlightMode = "ON";
+        } else {
+            headlightMode = "AUTO";
+        }
     }
 }
