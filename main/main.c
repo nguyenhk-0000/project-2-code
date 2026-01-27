@@ -4,16 +4,19 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 
-#define drive_seat GPIO_NUM_11
-#define pass_seat GPIO_NUM_12
-#define drive_belt GPIO_NUM_13
-#define pass_belt GPIO_NUM_17
-#define ignite GPIO_NUM_18
-#define buzzer GPIO_NUM_4
-#define LED_RED GPIO_NUM_2 // Blue substitute
-#define LED_GREEN GPIO_NUM_21
-#define LED_LEFT_LOW_BEAM GPIO_NUM_22
-#define LED_RIGHT_LOW_BEAM GPIO_NUM_23
+#define drive_seat GPIO_NUM_4
+#define pass_seat GPIO_NUM_5
+#define drive_belt GPIO_NUM_6
+#define pass_belt GPIO_NUM_7
+#define ignite GPIO_NUM_10
+#define buzzer GPIO_NUM_12
+#define LED_RED GPIO_NUM_14 // Blue substitute
+#define LED_GREEN GPIO_NUM_13
+#define LED_LEFT_LOW_BEAM GPIO_NUM_38
+#define LED_RIGHT_LOW_BEAM GPIO_NUM_39
+//ADC
+#define LED_SENSOR GPIO_NUM_24
+#define LIGHTS_MODE_SELECTOR GPIO_NUM_25
 
 void app_main(void)
 {
