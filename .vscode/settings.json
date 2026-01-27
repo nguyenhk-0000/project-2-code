@@ -1,7 +1,7 @@
 {
   "C_Cpp.intelliSenseEngine": "default",
   "idf.espIdfPath": "/home/asslover64/esp/esp-idf",
-  "idf.pythonInstallPath": "/usr/bin/python",
+  "idf.pythonInstallPath": "/usr/bin/python3",
   "idf.openOcdConfigs": [
     "board/esp32-wrover-kit-3.3v.cfg"
   ],
@@ -15,5 +15,6 @@
     "--background-index",
     "--query-driver=**",
     "--compile-commands-dir=/home/asslover64/project-2/build"
-  ]
+  ],
+  "idf.flashType": "UART"
 }

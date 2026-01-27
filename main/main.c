@@ -12,6 +12,8 @@
 #define buzzer GPIO_NUM_4
 #define LED_RED GPIO_NUM_2 // Blue substitute
 #define LED_GREEN GPIO_NUM_21
+#define LED_LEFT_LOW_BEAM GPIO_NUM_22
+#define LED_RIGHT_LOW_BEAM GPIO_NUM_23
 
 void app_main(void)
 {
@@ -25,6 +27,8 @@ void app_main(void)
     gpio_reset_pin(buzzer);
     gpio_reset_pin(LED_RED);
     gpio_reset_pin(LED_GREEN);
+    gpio_reset_pin(LED_LEFT_LOW_BEAM);
+    gpio_reset_pin(LED_RIGHT_LOW_BEAM);
 
     // Inputs
     gpio_set_direction(drive_seat, GPIO_MODE_INPUT);
@@ -50,10 +54,14 @@ void app_main(void)
     gpio_set_direction(buzzer, GPIO_MODE_OUTPUT);
     gpio_set_direction(LED_RED, GPIO_MODE_OUTPUT);    
     gpio_set_direction(LED_GREEN, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LED_LEFT_LOW_BEAM, GPIO_MODE_OUTPUT);
+    gpio_set_direction(LED_RIGHT_LOW_BEAM, GPIO_MODE_OUTPUT);
 
     gpio_set_level(buzzer, 0);
     gpio_set_level(LED_RED, 0);
     gpio_set_level(LED_GREEN, 0);
+    gpio_set_level(LED_LEFT_LOW_BEAM, 0);
+    gpio_set_level(LED_RIGHT_LOW_BEAM, 0);
 
     /* ---------- STATE VARIABLES ---------- */
     bool welcome_shown = false;
@@ -62,6 +70,13 @@ void app_main(void)
     // New state variables for Requirement 4 & 5
     bool engine_running = false; 
     bool last_ignition = false; 
+
+    // New state variable for Requirements ???
+    char headlightMode[] = ""; // ON, OFF or AUTO modes
+        //will need a helper function to convert int values from potentiometer 
+        //to strings (optional)
+    int daylight = 0; //change to appropriate value
+    int dusk = 0;     //change to appropriate value
 
     printf("System ready.\n");
 
@@ -127,7 +142,33 @@ void app_main(void)
                 }
             }
         }
+
+        /* ---- 6, 7, 8. Headlight subsystem logic ---- */
+        /* To finish & test:
+        if (engine_running) {
+            if (headlightMode=="ON") {
+                //turn on both low beam lamps
+            } else if (headlightMode=="OFF") {
+                //turn off both low beam lamps 
+            } else if (headlightMode=="AUTO") {
+                if (lightLevel >= daylight) {
+                    vTaskDelay(2000 / portTICK_PERIOD_MS); //2 sec delay
+                    //low beam lamps turn off
+                }  else if (lightLevel <= dusk) {
+                    vTaskDelay(1000 / portTICK_PERIOD_MS); //1 sec delay
+                    //low beam lamps turn on
+                } else {
+                    //maintain prev state 
+                }
+            }
+        } else {
+            //turn off all low beam lamps 
+        }
         
+        */
+
+
+
         last_ignition = ignition; // Update last state for edge detection
 
         /* Requirement 4: Engine Latch */
@@ -141,5 +182,5 @@ void app_main(void)
 
         vTaskDelay(50 / portTICK_PERIOD_MS);
             
-            }
+    }
 }
