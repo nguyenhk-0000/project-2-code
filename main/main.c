@@ -4,19 +4,20 @@
 #include "freertos/task.h"
 #include "driver/gpio.h"
 
-#define drive_seat GPIO_NUM_4
-#define pass_seat GPIO_NUM_5
-#define drive_belt GPIO_NUM_6
-#define pass_belt GPIO_NUM_7
+#define drive_seat GPIO_NUM_15
+#define pass_seat GPIO_NUM_16
+#define drive_belt GPIO_NUM_17
+#define pass_belt GPIO_NUM_18
 #define ignite GPIO_NUM_10
 #define buzzer GPIO_NUM_12
 #define LED_RED GPIO_NUM_14 // Blue substitute
 #define LED_GREEN GPIO_NUM_13
 #define LED_LEFT_LOW_BEAM GPIO_NUM_38
 #define LED_RIGHT_LOW_BEAM GPIO_NUM_39
-//ADC
-#define LED_SENSOR GPIO_NUM_24
-#define LIGHTS_MODE_SELECTOR GPIO_NUM_25
+//ADC channel 3/GPIO4 - potentiometer
+//ADC channel 4/GPIO5 -light sensor
+//#define LED_SENSOR GPIO_NUM_24
+//#define LIGHTS_MODE_SELECTOR GPIO_NUM_25
 
 void app_main(void)
 {
@@ -78,8 +79,9 @@ void app_main(void)
     char headlightMode[] = ""; // ON, OFF or AUTO modes
         //will need a helper function to convert int values from potentiometer 
         //to strings (optional)
-    int daylight = 0; //change to appropriate value
-    int dusk = 0;     //change to appropriate value
+    // Threshhold values
+    int daylight = 1365; //change to appropriate value
+    int dusk = 2730;     //change to appropriate value
 
     printf("System ready.\n");
 
