@@ -127,12 +127,12 @@ void app_main(void)
     int light_index = 0;
 
     /* ---------- STATE VARIABLES ---------- */
-    bool welcome_shown = false;
-    bool lastDriveSeat = false;
+    bool welcome_shown = false; // Tracks if the welcome message has been printed to avoid repeating it. 
+    bool lastDriveSeat = false; // Stores the previous state of the driver seat to detect when someone sits down.
     
     // New state variables for Requirement 4 & 5
-    bool engine_running = false; 
-    bool last_ignition = false; 
+    bool engine_running = false; // Stores the current running state of the engine; stays true until toggled off.
+    bool last_ignition = false; // Stores the previous state of the ignition button to detect a new press (edge detection).
 
     // New state variables for Requirement 6-8
     bool headlights_on = true;
