@@ -3,6 +3,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "esp_adc/adc_oneshot.h"
 
 /* ---------- GPIO DEFINITIONS ---------- */
 #define drive_seat GPIO_NUM_15
@@ -10,9 +11,7 @@
 #define drive_belt GPIO_NUM_17
 #define pass_belt GPIO_NUM_18
 #define ignite GPIO_NUM_10
-
 #define buzzer GPIO_NUM_40
-
 #define LED_RED GPIO_NUM_41 // Blue substitute
 #define LED_GREEN GPIO_NUM_42
 
@@ -27,29 +26,16 @@
 #define BITWIDTH        ADC_BITWIDTH_12
 #define BUF_SIZE        16                  // Number of points to average the ADC input voltage
 
-#define LOOP_DELAY  50   // ms
-
 /* ---------- THRESHOLDS ---------- */
 // Threshold values for light sensor
 int daylight = 1722;
 int dusk = 880;
 
 // Threshold values for potentiometer modes
-int threshold1 = 1365;
-int threshold2 = 2730;
+int mode_off_max_mv = 1365;
+int mode_on_min_mv = 2730;
 
-/* ---------- HELPER FUNCTION ---------- */
-//Helper function for Requirement ???
-//pot_mv stands for potentiometer_mV (voltage input from potentiometer in mV)
-void convertModes (int pot_mv, char *headlightMode) {            
-    if (pot_mv<=threshold1) {           //0 -1365
-        strcpy(headlightMode, "OFF");
-    } else if (pot_mv >= threshold2) {  //2730-4095
-        strcpy(mode, "ON");
-    } else {
-        strcpy(mode, "AUTO");
-    }
-}
+//maybe helper function but optional
 
 void app_main(void)
 {
@@ -148,10 +134,11 @@ void app_main(void)
     bool engine_running = false; 
     bool last_ignition = false; 
 
-    // New state variable for Requirement ???
-    char headlightMode[6] = "OFF";      // ON, OFF or AUTO modes
-        //will need a helper function to convert int values from potentiometer 
-        //to strings (optional)
+    // New state variables for Requirement 6-8
+    bool headlights_on = true;
+    int dusk_counter = 0;      // AUTO mode counter toward turning ON
+    int dayLi_counter = 0;       // AUTO mode counter toward turning OFF
+
 
     printf("System ready.\n");
 
@@ -170,29 +157,28 @@ void app_main(void)
         adc_oneshot_read(adc1_handle, HEADLIGHT_MODE_DETECTOR, &pot_bits);    // Read ADC bits
         adc_cali_raw_to_voltage(pot_cali_handle, pot_bits, &pot_mv);          // Convert to mV
 
+        // Store the new voltage reading into the circular buffer.
         pot_buffer[pot_index] = pot_mv;
         pot_index = (pot_index + 1) % BUF_SIZE;
 
+        // Compute the average filtered value.
         int pot_filt = 0;
         for (int i = 0; i < BUF_SIZE; i++) pot_filt += pot_buffer[i];
         pot_filt /= BUF_SIZE;
-
-        convertModes(pot_filt, headlightMode);
 
         /* ---------- LIGHT SENSOR READ + FILTER ---------- */
         int light_bits, light_mv;           // ADC reading (bits and mV)
         adc_oneshot_read(adc1_handle, LIGHT_SENSOR, &light_bits);           // Read ADC bits
         adc_cali_raw_to_voltage(light_cali_handle, light_bits, &light_mv);  // Convert to mV
 
-        //filter values
+        // Store the new voltage reading into the circular buffer.
         light_buffer[light_index] = light_mv;
         light_index = (light_index + 1) % BUF_SIZE;
 
+        // Compute the average filtered value.
         int light_filt = 0;
         for (int i = 0; i < BUF_SIZE; i++) light_filt += light_buffer[i];
         light_filt /= BUF_SIZE;
-
-        bool is_safe_to_start = (driveSeat && passSeat && driveBelt && passBelt);
 
         // Check if conditions are safe for ignition
         bool is_safe_to_start = (driveSeat && passSeat && driveBelt && passBelt);
@@ -246,38 +232,11 @@ void app_main(void)
                 }
             }
         }
-
+        
         last_ignition = ignition; // Update last state for edge detection
 
-        /* ---- 6, 7, 8. Headlight subsystem logic ---- */
-        if (engine_running) {
-            /*
-            if (strcmp(headlightMode, "ON") == 0) {
-                gpio_set_level(LED_LEFT_LOW_BEAM, 1);
-                gpio_set_level(LED_RIGHT_LOW_BEAM, 1);
-            } else if (strcmp(headlightMode, "OFF") == 0) {
-                gpio_set_level(LED_LEFT_LOW_BEAM, 0);
-                gpio_set_level(LED_RIGHT_LOW_BEAM, 0);
-            } else { // AUTO
-                if (light_filt <= dusk) {
-                    vTaskDelay(1000 / portTICK_PERIOD_MS); //1 sec delay
-                    gpio_set_level(LED_LEFT_LOW_BEAM, 1);
-                    gpio_set_level(LED_RIGHT_LOW_BEAM, 1);
-                } else if (light_filt >= daylight) {
-                    vTaskDelay(2000 / portTICK_PERIOD_MS); //2 sec delay
-                    gpio_set_level(LED_LEFT_LOW_BEAM, 0);
-                    gpio_set_level(LED_RIGHT_LOW_BEAM, 0);
-                } else {
-                    //maintain prev state 
-                }
-            }
-            */
-        } else {
-            gpio_set_level(LED_LEFT_LOW_BEAM, 0);
-            gpio_set_level(LED_RIGHT_LOW_BEAM, 0);
-        }
-
         /* Requirement 4: Engine Latch */
+       
         // This ensures the hardware LED always reflects the engine's software state.
         if (engine_running == true) {
             gpio_set_level(LED_RED, 1); // Keep the engine LED on [cite: 22, 26]
@@ -285,6 +244,60 @@ void app_main(void)
             gpio_set_level(LED_RED, 0); // Keep the engine LED off [cite: 27, 36]
         }
 
+        /* ---- 6, 7, 8. Headlight subsystem logic ---- */
+        // Only implement this subsytem if the engine is activelly running.
+        // Otherwise, turn headlights off.
+        if (engine_running) {
+
+            if (pot_filt >=mode_on_min_mv) {               // If mode selected is ON.
+                headlights_on = true;
+                dusk_counter = 0;
+                dayLi_counter = 0;
+                //printf("Mode ON\n");
+            } else if (pot_filt <= mode_off_max_mv) {        // If mode selected is OFF.
+                headlights_on = false;
+                dusk_counter = 0;
+                dayLi_counter = 0;  
+                //printf("Mode OFF\n");          
+            } else {                                    // If mode selected is AUTO.
+                printf("Mode AUTO\n");
+                if (light_filt < dusk) {
+                    dusk_counter++;
+                    dayLi_counter = 0;
+
+                    // A delay of 1 second calculated taking advantage of loop delay (50ms)
+                    if (dusk_counter >= 20) {   // 20 iterations × 50 ms = 1000 ms = 1s
+                        headlights_on = true;
+                    }
+                    //printf("Less than dusk --> Turn lights ON\n");
+                } else if (light_filt > daylight) {
+                    dayLi_counter++;
+                    dusk_counter = 0;
+
+                    // A delay of 2 seconds calculated taking advantage of loop delay (50ms)
+                    if (dayLi_counter >= 40) { // 40 iterations × 50 ms = 2000 ms = 2s
+                        headlights_on = false;
+                    }
+                    //printf("More than daylight --> Turn lights OFF\n");
+                } else {   // if light filter value is somewhere between, maintain previous state
+                    dusk_counter = 0;
+                    dayLi_counter = 0;
+                    //printf("Neither nor --> Maintain prev state\n");
+                }
+            }
+
+            // Output headlight state
+            gpio_set_level(LED_LEFT_LOW_BEAM, headlights_on);
+            gpio_set_level(LED_RIGHT_LOW_BEAM, headlights_on);
+        } else {
+            headlights_on = false;
+            dusk_counter = 0;
+            dayLi_counter = 0;
+            gpio_set_level(LED_LEFT_LOW_BEAM, 0);
+            gpio_set_level(LED_RIGHT_LOW_BEAM, 0);
+        }
+
+        // loop delay
         vTaskDelay(50 / portTICK_PERIOD_MS);
     }
 }
