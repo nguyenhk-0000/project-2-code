@@ -260,7 +260,7 @@ void app_main(void)
                 dayLi_counter = 0;  
                 //printf("Mode OFF\n");          
             } else {                                    // If mode selected is AUTO.
-                printf("Mode AUTO\n");
+                // printf("Mode AUTO\n");
                 if (light_filt < dusk) {
                     dusk_counter++;
                     dayLi_counter = 0;
